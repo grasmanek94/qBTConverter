@@ -12,13 +12,17 @@ namespace qBTConverter
         private readonly string _sourceBasePath;
         private readonly string _destBasePath;
         private readonly bool _isVerboseOutput = false;
+        private readonly string _pathReplacement;
 
-        public Converter(string path, string sourceBasePath, string destBasePath, bool isVerboseOutput)
+        public Converter(string path, string sourceBasePath, string destBasePath, bool isVerboseOutput, bool windowsOutput)
         {
+            _pathReplacement = windowsOutput ? "\\" : "/";
             _isVerboseOutput = isVerboseOutput;
             _path = path.TrimEnd('\\', '/');
             _sourceBasePath = sourceBasePath.TrimEnd('\\', '/');
-            _destBasePath = destBasePath.TrimEnd('\\', '/');
+            _destBasePath = destBasePath.TrimEnd('\\', '/')
+                .Replace("\\", _pathReplacement)
+                .Replace("/", _pathReplacement);
         }
 
         // :qBt-savePath<len>:<len chars>
@@ -28,7 +32,8 @@ namespace qBTConverter
         {
             Console.WriteLine("Using path \"" + _path + "\"");
             Console.WriteLine("Search \"" + _sourceBasePath + "\"");
-            Console.WriteLine("Replace \"" + _destBasePath + "\" & \\ -> /");
+            Console.WriteLine("Replace \"" + _destBasePath + "\"");
+            Console.WriteLine("Path separator: " + _pathReplacement);
 
             string[] files = Directory.GetFiles(_path, "*.fastresume", SearchOption.TopDirectoryOnly);
 
@@ -192,7 +197,8 @@ namespace qBTConverter
                 return false;
             }
 
-            path = path.Replace(location, replace).Replace("\\", "/");
+            path = path.
+                Replace(location, replace);
 
             byte[] rPath = Encoding.UTF8.GetBytes(path.Length + ":" + path);
 
@@ -208,11 +214,13 @@ namespace qBTConverter
         {
             if (args.Length < 3)
             {
-                Console.WriteLine("Usage: qBTConverter <path> <windows base directory> <linux base directory> [--verbose]");
+                Console.WriteLine("Usage: qBTConverter <path> <Current Directory> <Resulting Directory> [--verbose] [--windows]");
+                Console.WriteLine("It is assumed <CD> is a Windows directory ('\\' paths) and <RD> is a Linux directory ('/' paths).");
+                Console.WriteLine("If <RD> is a Windows directory, provide the --windows option!");
                 return;
             }
 
-            new Converter(args[0], args[1], args[2], args.Length > 3 && args.Contains("--verbose")).Process();
+            new Converter(args[0], args[1], args[2], args.Length > 3 && args.Contains("--verbose"), args.Length > 3 && args.Contains("--windows")).Process();
         }
     }
 }
